@@ -3,3 +3,4 @@ tensorflow
 gdown
 gunicorn
 numpy
+Pillow
