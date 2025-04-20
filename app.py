@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
@@ -30,24 +30,25 @@ model = load_model(MODEL_PATH)
 # --- Create Flask App ---
 app = Flask(__name__)
 
+# --- Home route (API health check) ---
 @app.route('/')
 def home():
     return "✅ Mien Fabric Classifier API is running!"
 
+# --- JSON API route ---
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
         data = request.get_json()
-        input_data = np.array(data['input']).reshape(1, -1)  # Adjust input shape if needed
+        input_data = np.array(data['input']).reshape(1, -1)
         predictions = model.predict(input_data)
-        
-        # Get predicted class index
+
         predicted_index = np.argmax(predictions[0])
         predicted_label = CLASS_LABELS[predicted_index]
         youtube_link = YOUTUBE_LINKS[predicted_label]
 
         return jsonify({
-            'predicted_index': predicted_index + 1,  # for 1-based class (1 to 4)
+            'predicted_index': predicted_index + 1,
             'predicted_label': predicted_label,
             'youtube_link': youtube_link
         })
@@ -55,5 +56,33 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+# --- Web UI form ---
+@app.route('/web')
+def web_ui():
+    return render_template('index.html')
+
+# --- Handle Web UI form submit ---
+@app.route('/predict_web', methods=['POST'])
+def predict_web():
+    try:
+        input_str = request.form['input_data']
+        input_list = list(map(float, input_str.split(',')))
+        input_data = np.array(input_list).reshape(1, -1)
+        predictions = model.predict(input_data)
+
+        predicted_index = np.argmax(predictions[0])
+        predicted_label = CLASS_LABELS[predicted_index]
+        youtube_link = YOUTUBE_LINKS[predicted_label]
+
+        return f'''
+            <h2>🔮 Predicted: {predicted_label}</h2>
+            <p>🧵 Pattern Number: {predicted_index + 1}</p>
+            <p><a href="{youtube_link}" target="_blank">🔗 Watch on YouTube</a></p>
+            <br><a href="/web">🔁 Try Again</a>
+        '''
+    except Exception as e:
+        return f'<p>Error: {e}</p><br><a href="/web">Back</a>'
+
+# --- Run app locally ---
 if __name__ == '__main__':
     app.run(debug=True)
