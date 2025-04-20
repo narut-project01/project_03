@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import gdown
 from flask import Flask, render_template, request, url_for
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
@@ -7,14 +8,23 @@ from tensorflow.keras.preprocessing import image
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-# Load model
-model = load_model('mien_fabric_classifier_forapp.h5')
+# ดาวน์โหลดโมเดลจาก Google Drive หากยังไม่มี
+MODEL_ID = '1AB3tFMw6K8iL-RnGt0TUwQlvA53-ccvd'
+MODEL_PATH = 'mien_fabric_classifier_forapp.h5'
+
+if not os.path.exists(MODEL_PATH):
+    print("📥 Downloading model from Google Drive...")
+    gdown.download(f'https://drive.google.com/uc?id={MODEL_ID}', MODEL_PATH, quiet=False)
+    print("✅ Model downloaded.")
+
+# โหลดโมเดล
+model = load_model(MODEL_PATH)
 print("✅ Model loaded.")
 
-# Class labels
+# ชื่อคลาส
 CLASS_LABELS = ['Mien_pattern_01', 'Mien_pattern_02', 'Mien_pattern_03', 'Mien_pattern_04']
 
-# Mapping predicted labels to YouTube URLs
+# ลิงก์ YouTube ตามคลาส
 YOUTUBE_LINKS = {
     'Mien_pattern_01': 'https://youtu.be/zkrltLG0r9w',
     'Mien_pattern_02': 'https://youtu.be/example_for_02',
@@ -35,12 +45,12 @@ def index():
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
 
-            # Preprocess image (ตาม input shape ที่ model ต้องการ)
-            img = image.load_img(filepath, target_size=(150, 150))  # แก้เป็นขนาดที่ model ต้องการ
+            # ปรับขนาดภาพให้ตรงกับ input ของโมเดล (แก้ให้ตรงกับของคุณ)
+            img = image.load_img(filepath, target_size=(150, 150))
             img_array = image.img_to_array(img) / 255.0
             img_array = np.expand_dims(img_array, axis=0)
 
-            # Predict
+            # ทำนายผล
             prediction = model.predict(img_array)
             predicted_index = np.argmax(prediction)
             result = CLASS_LABELS[predicted_index]
