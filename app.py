@@ -51,7 +51,7 @@ def index():
             result = CLASS_LABELS[predicted_index]
             youtube_link = YOUTUBE_LINKS.get(result)
 
-    return render_template('index1.html', result=result, filename=filename, youtube_link=youtube_link)
+    return render_template('index.html', result=result, filename=filename, youtube_link=youtube_link)
 
 if __name__ == '__main__':
     app.run(debug=True)
